@@ -1,0 +1,7 @@
+{
+  "name": "God's Way Enterprise",
+  "description": "Automotive Parts & Accessories Management Platform",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

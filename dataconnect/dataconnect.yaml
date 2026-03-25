@@ -1,0 +1,11 @@
+specVersion: "v1alpha"
+serviceId: "godsways-connect"
+location: "us-east4"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "godsways-connect-db"
+      cloudSql:
+        instanceId: "godsways-connect-db"
+connectorDirs: ["./connector"]

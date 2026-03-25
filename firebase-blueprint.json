@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application (owner or employee)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["owner", "employee"] },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "An automotive part or accessory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sku": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "emoji": { "type": "string" },
+        "image": { "type": "string" },
+        "price": { "type": "number" },
+        "cost": { "type": "number" },
+        "stock": { "type": "number" },
+        "compat": { "type": "string" },
+        "status": { "type": "string", "enum": ["in", "low", "out"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "sku", "name", "category", "price", "cost", "stock", "status"]
+    },
+    "SalesOrder": {
+      "title": "SalesOrder",
+      "description": "A record of a sale",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customer": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "total": { "type": "number" },
+        "payment": { "type": "string", "enum": ["Cash", "Card", "MTN MoMo", "Credit"] },
+        "status": { "type": "string", "enum": ["paid", "pending", "refund"] },
+        "time": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "customer", "items", "total", "payment", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles and roles"
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Stores inventory items"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/SalesOrder" },
+      "description": "Stores sales transactions"
+    }
+  }
+}

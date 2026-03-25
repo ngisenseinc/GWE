@@ -1,0 +1,68 @@
+mutation CreateProduct($id: String!, $sku: String!, $name: String!, $category: String!, $emoji: String, $image: String, $price: Float!, $cost: Float!, $stock: Int!, $compat: String, $status: String!, $createdAt: Date!, $updatedAt: Date!) @auth(level: USER) {
+  product_insert(data: {
+    id: $id,
+    sku: $sku,
+    name: $name,
+    category: $category,
+    emoji: $emoji,
+    image: $image,
+    price: $price,
+    cost: $cost,
+    stock: $stock,
+    compat: $compat,
+    status: $status,
+    createdAt: $createdAt,
+    updatedAt: $updatedAt
+  })
+}
+
+mutation UpdateProduct($id: String!, $sku: String, $name: String, $category: String, $emoji: String, $image: String, $price: Float, $cost: Float, $stock: Int, $compat: String, $status: String, $updatedAt: Date!) @auth(level: USER) {
+  product_update(id: $id, data: {
+    sku: $sku,
+    name: $name,
+    category: $category,
+    emoji: $emoji,
+    image: $image,
+    price: $price,
+    cost: $cost,
+    stock: $stock,
+    compat: $compat,
+    status: $status,
+    updatedAt: $updatedAt
+  })
+}
+
+mutation DeleteProduct($id: String!) @auth(level: USER) {
+  product_delete(id: $id)
+}
+
+mutation CreateOrder($id: String!, $customer: String!, $items: String!, $total: Float!, $payment: String!, $status: String!, $time: String, $createdAt: Date!, $createdBy: String) @auth(level: USER) {
+  order_insert(data: {
+    id: $id,
+    customer: $customer,
+    items: $items,
+    total: $total,
+    payment: $payment,
+    status: $status,
+    time: $time,
+    createdAt: $createdAt,
+    createdBy: $createdBy
+  })
+}
+
+mutation UpdateOrder($id: String!, $status: String) @auth(level: USER) {
+  order_update(id: $id, data: {
+    status: $status
+  })
+}
+
+mutation CreateUser($id: String!, $email: String!, $role: String!, $displayName: String, $photoURL: String, $createdAt: Date!) @auth(level: USER) {
+  user_insert(data: {
+    id: $id,
+    email: $email,
+    role: $role,
+    displayName: $displayName,
+    photoURL: $photoURL,
+    createdAt: $createdAt
+  })
+}
