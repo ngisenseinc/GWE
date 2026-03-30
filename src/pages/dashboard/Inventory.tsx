@@ -605,6 +605,11 @@ export default function Inventory() {
                     ) : (
                       <span className="text-[#8A90A8] text-sm font-medium">No Img</span>
                     )}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-[#4A5270] uppercase tracking-wide mb-1.5 block">Product Image</label>

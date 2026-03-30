@@ -1,32 +1,71 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useStore, SalesOrder } from '../store/useStore';
-import { Package, Truck, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function OrderStatus() {
   const { orderId } = useParams<{ orderId: string }>();
   const salesOrders = useStore(state => state.salesOrders);
   const [order, setOrder] = useState<SalesOrder | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (orderId) {
-      const foundOrder = salesOrders.find(o => o.id === orderId);
-      if (foundOrder) {
-        setOrder(foundOrder);
+    const fetchOrder = async () => {
+      setLoading(true);
+      // First check store
+      const foundInStore = salesOrders.find(o => o.id === orderId);
+      if (foundInStore) {
+        setOrder(foundInStore);
+        setLoading(false);
+        return;
       }
+
+      // If not in store, fetch from Supabase
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          setOrder({
+            ...data,
+            items: typeof data.items === 'string' ? JSON.parse(data.items) : data.items
+          });
+        }
+      } catch (err) {
+        console.error("Order fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (orderId) {
+      fetchOrder();
     }
   }, [orderId, salesOrders]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F8FA] flex flex-col items-center justify-center p-4">
+        <div className="animate-pulse text-[#8A90A8]">Loading order details...</div>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
       <div className="min-h-screen bg-[#F7F8FA] flex flex-col items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md w-full">
+        <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md w-full border border-[#E2E6EF]">
           <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl font-serif font-bold">GW</span>
           </div>
           <h2 className="text-xl font-bold text-[#0A0C14] mb-2">Order Not Found</h2>
           <p className="text-[#8A90A8] mb-6">We couldn't find an order with the ID: {orderId}</p>
-          <Link to="/" className="inline-flex items-center justify-center bg-[#C9A84C] text-black px-6 py-3 rounded-xl font-bold hover:bg-[#E8C76A] transition-colors">
+          <Link to="/" className="inline-flex items-center justify-center bg-[#C9A84C] text-black px-6 py-3 rounded-xl font-bold hover:bg-[#E8C76A] transition-colors w-full">
             Return to Home
           </Link>
         </div>

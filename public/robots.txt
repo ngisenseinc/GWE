@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /order-status/
+Disallow: /dashboard/
+Disallow: /api/
+
+Sitemap: https://godswayenterprise.com/sitemap.xml
