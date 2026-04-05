@@ -85,13 +85,18 @@ export default function Settings() {
       setLoading(true);
       try {
         const imageUrl = await uploadImageToStorage(file);
-        const { error } = await supabase
-          .from('users')
-          .update({ avatar_url: imageUrl })
-          .eq('id', user?.id);
-
-        if (error) throw error;
-
+        // Update avatar_url via API
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const resp = await fetch('/api/users/me', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ avatar_url: imageUrl })
+        });
+        if (!resp.ok) throw new Error('Failed to update avatar');
+        const updated = await resp.json();
         setUser({ ...user, avatar_url: imageUrl, avatar: imageUrl });
         toast.success('Avatar updated!');
       } catch (err: any) {

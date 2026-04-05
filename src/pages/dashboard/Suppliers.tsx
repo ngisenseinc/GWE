@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
+import { getSuppliers } from '../../api/data';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -8,6 +9,7 @@ import { Plus, Building2, Phone, FileText, MessageSquare, X, Globe, DollarSign, 
 
 export default function Suppliers() {
   const suppliers = useStore(state => state.suppliers);
+  const setSuppliers = useStore(state => state.setSuppliers);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
@@ -36,6 +38,18 @@ export default function Suppliers() {
       setIsSubmitting(false);
     }
   };
+
+  // Load suppliers via API on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getSuppliers();
+        setSuppliers(data as any);
+      } catch (e) {
+        console.error('Failed to load suppliers via API', e);
+      }
+    })();
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 flex-1 min-h-0">

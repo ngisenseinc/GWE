@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
+import registerRoutes from './routes/apiRoutes.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
@@ -37,6 +38,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
+
+// Register modular API routes (buyer/supplier/order endpoints, etc.)
 
 // Cloudinary configuration for signed uploads
 let cloudinary: any = null;
@@ -167,6 +170,8 @@ const apiLimiter = rateLimit({
 
 // Create Express app
 const app = express();
+// Mount modular API routes after app is created
+(registerRoutes as any)(app, supabase);
 
 // Security middleware
 app.use(helmet({
@@ -669,6 +674,122 @@ app.get('/api/health', (req: Request, res: Response) => {
     environment: NODE_ENV,
     version: process.env.npm_package_version || '1.0.0',
   });
+});
+
+// Orders API: fetch sales and purchase orders from Supabase
+app.get('/api/orders', async (req: any, res: any) => {
+  try {
+    const { data: sales, error: salesError } = await supabase
+      .from('sales_orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    const { data: purchases, error: purchaseError } = await supabase
+      .from('purchase_orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (salesError || purchaseError) {
+      console.error('Orders fetch error', salesError, purchaseError);
+      return res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+
+    const mapSales = (s: any) => ({
+      id: s.id,
+      customer: s.customer_name,
+      items: Array.isArray(s.items) ? s.items : (typeof s.items === 'string' ? JSON.parse(s.items) : []),
+      returnedItems: s.returned_items || {},
+      total: s.total,
+      payment: s.payment_method || '',
+      status: s.status,
+      time: s.created_at,
+    });
+
+    const mappedSales = (sales || []).map(mapSales);
+
+    const mappedPurchases = (purchases || []).map((p: any) => ({
+      id: p.id,
+      customer: p.supplier_name,
+      items: Array.isArray(p.items) ? p.items : (typeof p.items === 'string' ? JSON.parse(p.items) : []),
+      total: p.total,
+      status: p.status,
+      time: p.created_at,
+    }));
+
+    res.json({ sales: mappedSales, purchases: mappedPurchases });
+  } catch (err) {
+    console.error('Orders endpoint error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Customers API: fetch all customers
+app.get('/api/customers', async (req: any, res: any) => {
+  try {
+    const { data, error } = await supabase.from('customers').select('*').order('name', { ascending: true });
+    if (error) return res.status(500).json({ error: 'Failed to fetch customers' });
+    res.json(data || []);
+  } catch (err) {
+    console.error('Customers fetch error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Suppliers API: fetch all suppliers
+app.get('/api/suppliers', async (req: any, res: any) => {
+  try {
+    const { data, error } = await supabase.from('suppliers').select('*').order('name', { ascending: true });
+    if (error) return res.status(500).json({ error: 'Failed to fetch suppliers' });
+    res.json(data || []);
+  } catch (err) {
+    console.error('Suppliers fetch error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Employees API: fetch all employees (owners included if desired)
+app.get('/api/employees', async (req: any, res: any) => {
+  try {
+    const { data, error } = await supabase.from('users').select('id, email, display_name, role, phone, avatar_url').order('display_name', { ascending: true }).eq('role', 'employee');
+    if (error) return res.status(500).json({ error: 'Failed to fetch employees' });
+    res.json(data || []);
+  } catch (err) {
+    console.error('Employees fetch error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Lightweight data endpoint: Products list (MVP data flow via API)
+app.get('/api/products', async (req: Request, res: Response) => {
+  try {
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('API /api/products error:', error);
+      return res.status(500).json({ error: 'Failed to fetch products' });
+    }
+    // Normalize if needed
+    const normalized = (products || []).map((p: any) => ({
+      id: p.id,
+      sku: p.sku,
+      name: p.name,
+      category: p.category,
+      emoji: p.emoji,
+      image: p.image,
+      price: Number(p.price),
+      cost: Number(p.cost),
+      stock: Number(p.stock),
+      compat: p.compat,
+      status: p.status,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
+    }));
+    res.json(normalized);
+  } catch (err) {
+    console.error('Unexpected error fetching products:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Protected health check (requires auth)

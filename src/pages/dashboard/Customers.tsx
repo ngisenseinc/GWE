@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
+import { getCustomers } from '../../api/data';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -8,6 +9,7 @@ import { Plus, MessageSquare, X, User, Phone, Car, DollarSign, Calendar } from '
 
 export default function Customers() {
   const customers = useStore(state => state.customers);
+  const setCustomers = useStore(state => state.setCustomers);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
@@ -35,6 +37,18 @@ export default function Customers() {
       setIsSubmitting(false);
     }
   };
+
+  // Load customers via API on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getCustomers();
+        setCustomers(data as any);
+      } catch (e) {
+        console.error('Failed to load customers via API', e);
+      }
+    })();
+  }, []);
 
   return (
     <div className="flex flex-col flex-1 min-h-0">

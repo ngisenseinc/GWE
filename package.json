@@ -36,10 +36,11 @@
     "recharts": "^2.15.3",
     "tailwind-merge": "^3.5.0",
     "zustand": "^5.0.12",
-    "serverless-http": "^2.9.0",
+    "serverless-http": "^3.2.0",
     "cloudinary": "^1.33.0"
   },
   "devDependencies": {
+    "@types/compression": "^1.7.5",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",

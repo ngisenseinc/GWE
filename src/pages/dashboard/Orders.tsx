@@ -13,6 +13,8 @@ export default function Orders() {
   const updateSalesOrderReturns = useStore(state => state.updateSalesOrderReturns);
   const updateProductStock = useStore(state => state.updateProductStock);
   const products = useStore(state => state.products);
+  const setSalesOrders = useStore(state => state.setSalesOrders);
+  const setPurchaseOrders = useStore(state => state.setPurchaseOrders);
 
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
   const [returnMode, setReturnMode] = useState(false);
@@ -56,6 +58,8 @@ export default function Orders() {
     setSelectedOrder(null);
     setReturnItems({});
   };
+
+  // (Legacy) Orders data remains from store subscriptions; optional API migration can be done later
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
