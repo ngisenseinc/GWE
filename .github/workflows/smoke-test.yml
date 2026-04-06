@@ -1,0 +1,32 @@
+name: Smoke Test
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install
+        run: npm ci
+      - name: Lint (type check)
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      - name: Smoke Test (auth only)
+        run: node tests/smoke.js
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      - name: Smoke Test Health Endpoints
+        run: node tests/smoke-health.js
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      - name: Summary
+        run: echo "Smoke test complete: build and lint succeeded. Further integration tests can be added later."

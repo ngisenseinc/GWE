@@ -4,27 +4,23 @@ import { cn } from '../../lib/utils';
 import { useStore, SalesOrder } from '../../store/useStore';
 import { motion, AnimatePresence } from 'motion/react';
 
-const PO_ORDERS = [
-  {id:'PO-2026-021',supplier:'Denso Auto Parts Ltd',items:8,total:'GHS 18,400',status:'received',date:'Mar 15'},
-  {id:'PO-2026-020',supplier:'AutoParts Dubai Trading',items:12,total:'GHS 34,200',status:'confirmed',date:'Mar 12'},
-  {id:'PO-2026-019',supplier:'Seoul Motor Parts',items:5,total:'GHS 9,800',status:'sent',date:'Mar 10'},
-  {id:'PO-2026-018',supplier:'Ghana Spare Parts Co.',items:3,total:'GHS 4,100',status:'sent',date:'Mar 8'},
-  {id:'PO-2026-017',supplier:'Denso Auto Parts Ltd',items:15,total:'GHS 28,700',status:'received',date:'Feb 28'},
-];
 
 export default function Orders() {
-  const [activeTab, setActiveTab] = useState<'purchase' | 'sales'>('purchase');
+  const [activeTab, setActiveTab] = useState<'purchase' | 'sales'>('sales');
+  const purchaseOrders = useStore(state => state.purchaseOrders);
   const salesOrders = useStore(state => state.salesOrders);
   const updateSalesOrderStatus = useStore(state => state.updateSalesOrderStatus);
   const updateSalesOrderReturns = useStore(state => state.updateSalesOrderReturns);
   const updateProductStock = useStore(state => state.updateProductStock);
   const products = useStore(state => state.products);
+  const setSalesOrders = useStore(state => state.setSalesOrders);
+  const setPurchaseOrders = useStore(state => state.setPurchaseOrders);
 
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
   const [returnMode, setReturnMode] = useState(false);
   const [returnItems, setReturnItems] = useState<Record<number, number>>({});
 
-  const handleReturnItem = (id: number, maxQty: number, delta: number) => {
+  const handleReturnItem = (id: string | number, maxQty: number, delta: number) => {
     setReturnItems(prev => {
       const current = prev[id] || 0;
       const next = Math.max(0, Math.min(maxQty, current + delta));
@@ -62,6 +58,8 @@ export default function Orders() {
     setSelectedOrder(null);
     setReturnItems({});
   };
+
+  // (Legacy) Orders data remains from store subscriptions; optional API migration can be done later
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -109,7 +107,7 @@ export default function Orders() {
               </tr>
             </thead>
             <tbody>
-              {activeTab === 'purchase' ? PO_ORDERS.map((o, i) => (
+              {activeTab === 'purchase' ? purchaseOrders.map((o, i) => (
                 <tr key={i} className="border-b border-[#E2E6EF] last:border-0 hover:bg-[#F7F8FA] transition-colors">
                   <td className="p-3.5 px-4"><span className="font-mono text-[11px] text-[#C9A84C]">{o.id}</span></td>
                   <td className="p-3.5 px-4 font-semibold text-[#0A0C14]">{o.supplier}</td>
@@ -174,7 +172,7 @@ export default function Orders() {
 
         {/* Mobile Grid */}
         <div className="md:hidden flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-[#F7F8FA]">
-          {activeTab === 'purchase' ? PO_ORDERS.map((o, i) => (
+          {activeTab === 'purchase' ? purchaseOrders.map((o, i) => (
             <div key={i} className="bg-white border border-[#E2E6EF] rounded-xl p-4 flex flex-col gap-3 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>

@@ -1,15 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStore, Product } from '../../store/useStore';
 import { cn } from '../../lib/utils';
 import { Search, Plus, Upload, Edit, BarChart2, Trash2, X, ArrowUpDown, Package, AlertTriangle, CheckCircle2, QrCode, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { uploadImageToStorage } from '../../services/storageService';
+import { getProducts } from '../../api/data';
 
 export default function Inventory() {
   const user = useStore(state => state.user);
   const isOwner = user?.role === 'owner';
   const products = useStore(state => state.products);
+  const setProducts = useStore(state => state.setProducts);
   const updateProductStock = useStore(state => state.updateProductStock);
   const updateProductImage = useStore(state => state.updateProductImage);
   const addProduct = useStore(state => state.addProduct);
@@ -40,6 +42,18 @@ export default function Inventory() {
   });
 
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+
+  // Load products from API via data.ts
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getProducts();
+        setProducts(data as unknown as Product[]);
+      } catch (e) {
+        console.error('Failed to load products from API', e);
+      }
+    })();
+  }, []);
 
   const filteredProducts = useMemo(() => {
     let result = products.filter(p => {
@@ -604,6 +618,11 @@ export default function Inventory() {
                       <img src={newProductImage} alt="New Product" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-[#8A90A8] text-sm font-medium">No Img</span>
+                    )}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      </div>
                     )}
                   </div>
                   <div>
