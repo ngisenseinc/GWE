@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
-import registerRoutes from './routes/apiRoutes.js';
+// Removed modular router import; consolidating routes in this file (Plan A)
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
@@ -39,7 +39,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
-// Register modular API routes (buyer/supplier/order endpoints, etc.)
+// All API routes are consolidated in this file (Plan A)
 
 // Cloudinary configuration for signed uploads
 let cloudinary: any = null;
@@ -171,7 +171,7 @@ const apiLimiter = rateLimit({
 // Create Express app
 const app = express();
 // Mount modular API routes after app is created
-(registerRoutes as any)(app, supabase);
+// (Plan A) Router consolidation: no modular router mounting here
 
 // Security middleware
 app.use(helmet({
@@ -840,9 +840,10 @@ app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`
+// Start server only when not in serverless environment
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
 ║   🛠️  God's Way Enterprise - Production Server               ║
@@ -853,6 +854,7 @@ app.listen(PORT, '0.0.0.0', () => {
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
   `);
-});
+  });
+}
 
 export default app;

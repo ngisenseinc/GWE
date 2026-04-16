@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../lib/supabase';
 import { useStore } from '../store/useStore';
 import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, ArrowLeft, Loader2, KeyRound, Mail } from 'lucide-react';
+import * as authService from '../services/authService';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -25,50 +25,45 @@ export default function Login() {
 
     try {
       if (mode === 'forgot') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/login`,
-        });
-        if (error) throw error;
+        await authService.forgotPassword(email);
         toast.success('Password reset link sent! Check your inbox.');
         setMode('login');
         return;
       }
 
       if (mode === 'register') {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-
-        if (data.user) {
-          const { error: profileError } = await supabase.from('users').insert([{
-            id: data.user.id,
-            email: data.user.email,
-            display_name: name || 'New Staff',
-            role: 'employee',
-          }]);
-          if (profileError && !profileError.message.includes('duplicate')) {
-            console.error('Profile creation error:', profileError);
-          }
-        }
-
-        toast.success('Account created! Check your email to verify.');
-        setMode('login');
+        const data = await authService.register(email, password, name);
+        toast.success('Account created successfully!');
+        // Set user in store
+        setUser({
+          ...data.user,
+          uid: data.user.id
+        });
+        navigate('/dashboard');
         return;
       }
 
       // Login
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      const data = await authService.login(email, password);
 
       if (data.user) {
-        setUser({ ...data.user, uid: data.user.id });
+        // Save refresh token if provided
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
+
+        // Set user in store
+        setUser({
+          ...data.user,
+          uid: data.user.id
+        });
+
         toast.success('Welcome back!');
         navigate('/dashboard');
       }
     } catch (err: any) {
       const msg = err.message || 'Authentication failed. Please try again.';
-      toast.error(msg.includes('Invalid login credentials')
-        ? 'Incorrect email or password.'
-        : msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

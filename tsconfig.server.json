@@ -12,6 +12,6 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["server.ts"],
+  "include": ["server.ts", "api/**/*.ts"],
   "exclude": ["node_modules", "src"]
 }

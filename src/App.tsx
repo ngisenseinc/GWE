@@ -2,15 +2,15 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { supabase } from './lib/supabase';
 import { useStore } from './store/useStore';
-import { subscribeToProducts, subscribeToOrders, subscribeToPurchaseOrders, subscribeToSuppliers, subscribeToCustomers } from './services/supabaseService';
+import { getProducts, getOrders, getSuppliers, getCustomers, getEmployees } from './api/data';
 import { RBACProvider } from './context/RBACContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import OrderStatus from './pages/OrderStatus';
+import * as authService from './services/authService';
 
 function AppWrapper() {
   const setUser = useStore(state => state.setUser);
@@ -24,75 +24,64 @@ function AppWrapper() {
   const user = useStore(state => state.user);
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        handleUser(session.user);
-      } else {
-        setIsAuthReady(true);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        handleUser(session.user);
-      } else {
-        setUser(null);
-        setIsAuthReady(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    // Check initial authentication status
+    checkAuthStatus();
   }, []);
 
-  const handleUser = async (authUser: any) => {
+  const checkAuthStatus = async () => {
     try {
-      const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-
+      // Try to get current user with stored token
+      const currentUser = await authService.getCurrentUser();
       setUser({
-        ...authUser,
-        uid: authUser.id,
-        role: profile?.role || 'employee',
-        name: profile?.display_name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
-        displayName: profile?.display_name,
-        phone: profile?.phone,
-        avatar: profile?.avatar_url,
+        ...currentUser,
+        uid: currentUser.id,
+        role: currentUser.role,
+        name: currentUser.display_name || currentUser.email?.split('@')[0],
+        displayName: currentUser.display_name,
+        phone: currentUser.phone,
+        avatar: currentUser.avatar_url,
       });
-    } catch {
-      setUser({ ...authUser, uid: authUser.id, role: 'employee' });
+    } catch (error) {
+      // Not authenticated or token invalid
+      setUser(null);
+    } finally {
+      setIsAuthReady(true);
     }
-    setIsAuthReady(true);
   };
 
-  // Subscribe to data after auth is ready
+  // Fetch data periodically instead of using real-time subscriptions
   useEffect(() => {
     if (!isAuthReady) return;
 
-    const unsubProducts = subscribeToProducts(setProducts);
-    
-    let unsubOrders: (() => void) | undefined;
-    let unsubPOs: (() => void) | undefined;
-    let unsubSuppliers: (() => void) | undefined;
-    let unsubCustomers: (() => void) | undefined;
+    const fetchData = async () => {
+      try {
+        // Fetch all data
+        const [productsData, ordersData, suppliersData, customersData, employeesData] = await Promise.all([
+          getProducts(),
+          getOrders(),
+          getSuppliers(),
+          getCustomers(),
+          getEmployees()
+        ]);
 
-    if (user) {
-      unsubOrders = subscribeToOrders(setSalesOrders);
-      unsubPOs = subscribeToPurchaseOrders(setPurchaseOrders);
-      unsubSuppliers = subscribeToSuppliers(setSuppliers);
-      unsubCustomers = subscribeToCustomers(setCustomers);
-    }
-
-    return () => {
-      unsubProducts();
-      if (unsubOrders) unsubOrders();
-      if (unsubPOs) unsubPOs();
-      if (unsubSuppliers) unsubSuppliers();
-      if (unsubCustomers) unsubCustomers();
+        // Update store with fetched data
+        setProducts(productsData);
+        setSalesOrders(ordersData.sales || []);
+        setPurchaseOrders(ordersData.purchases || []);
+        setSuppliers(suppliersData);
+        setCustomers(customersData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
     };
+
+    // Fetch data immediately
+    fetchData();
+
+    // Set up periodic refresh (every 30 seconds)
+    const interval = setInterval(fetchData, 30000);
+
+    return () => clearInterval(interval);
   }, [isAuthReady, !!user, setProducts, setSalesOrders, setPurchaseOrders, setSuppliers, setCustomers]);
 
   if (!isAuthReady) {

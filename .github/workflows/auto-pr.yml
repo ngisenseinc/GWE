@@ -1,0 +1,63 @@
+name: Auto PR MVP
+
+on:
+  push:
+    branches:
+      - feat/mvp-vercel-supabase-cloudinary
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "MVP: JWT auth with Supabase; Cloudinary storage; Vercel deployment"
+          body: |
+            ## Summary
+            This PR introduces a minimal viable product stack: JWT-based authentication backed by Supabase, Cloudinary-based image storage, and deployment readiness on Vercel via a serverless Express backend. Firebase glue has been removed. Cloudinary path implemented; serverless wrapper added.
+
+            ## Changes
+            - Backend
+              - JWT endpoints: /api/auth/register, /api/auth/login, /api/auth/refresh, /api/auth/logout, /api/auth/me
+              - Password reset flow: /api/auth/forgot-password, /api/auth/reset-password
+              - User profile update: PATCH /api/users/me
+              - Cloudinary integration: /api/storage/sign-upload for signed uploads; client uploads directly to Cloudinary (MVP)
+              - Serverless wrapper for Vercel: api/server.ts
+            - Storage
+              - Cloudinary client-side unsigned uploads (MVP) with server-side signed path for enhanced security
+              - Default Cloudinary folder ce861f422e0915cd14c0225345d0b8b4ce (configurable via VITE_CLOUDINARY_TARGET_FOLDER)
+            - Infrastructure
+              - vercel.json for Vercel deployment
+              - api/server.ts for serverless hosting
+
+            ## Migration
+            - Apply the updated schema in Supabase.
+            - Ensure Cloudinary credentials are set in environment variables (server-side).
+
+            ## Testing
+            - Smoke test the following:
+              - POST /api/auth/register, POST /api/auth/login, POST /api/auth/refresh, GET /api/auth/me
+              - POST /api/auth/forgot-password and POST /api/auth/reset-password
+              - Upload an avatar to Cloudinary and ensure avatar_url is stored
+              - Deploy to Vercel and verify all /api/* endpoints
+
+            ## Breaking changes
+            - Firebase glue removed; auth/data now JWT-based
+            - Frontend auth flows moved to backend API
+
+            ## Next steps
+            - Optionally add signed Cloudinary uploads (server-side signing)
+            - Complete a small frontend API client layer and route all data under /api
+            - Add unit/integration tests
+
+            Branch: feat/mvp-vercel-supabase-cloudinary
